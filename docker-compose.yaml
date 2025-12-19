@@ -1,0 +1,14 @@
+services:
+  ollama:
+    image: ghcr.io/qmaru/ollama:cpu
+    container_name: ollama
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    volumes:
+      - /path/your/ollama:/root/.ollama
+    ports:
+      - "11434:11434"
