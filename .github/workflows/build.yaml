@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *"
 
 jobs:
   build:
@@ -14,28 +16,77 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Restore digest cache
+        id: restore
+        uses: actions/cache@v3
+        with:
+          path: .ollama_digest
+          key: ollama-digest
+
+      - name: Pull remote ollama:latest digest
+        id: pull_digest
+        run: |
+          REMOTE_DIGEST=$(docker manifest inspect ollama/ollama:latest | jq -r '.manifests[0].digest')
+          echo "remote_digest=$REMOTE_DIGEST" >> $GITHUB_OUTPUT
+
+      - name: Compare digest
+        id: compare
+        run: |
+          PREV_DIGEST=""
+          if [ -f ".ollama_digest" ]; then
+            PREV_DIGEST=$(cat .ollama_digest)
+          fi
+
+          REMOTE_DIGEST="${{ steps.pull_digest.outputs.remote_digest }}"
+
+          if [ "$PREV_DIGEST" = "$REMOTE_DIGEST" ]; then
+            echo "update_needed=false" >> $GITHUB_OUTPUT
+          else
+            echo "update_needed=true" >> $GITHUB_OUTPUT
+            echo "$REMOTE_DIGEST" > .ollama_digest
+          fi
+
       - name: Set up QEMU
+        if: steps.compare.outputs.update_needed == 'true'
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
+        if: steps.compare.outputs.update_needed == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Github Registry
+        if: steps.compare.outputs.update_needed == 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push CPU image
+        if: steps.compare.outputs.update_needed == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64, linux/arm64
+          platforms: linux/amd64,linux/arm64
           push: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
           tags: |
             ghcr.io/${{ github.repository_owner }}/ollama:cpu
             ghcr.io/${{ github.repository_owner }}/ollama:latest
+
+      - name: Save digest cache
+        if: steps.compare.outputs.update_needed == 'true'
+        uses: actions/cache@v3
+        with:
+          path: .ollama_digest
+          key: ollama-digest
+
+      - name: Show update status
+        run: |
+          if [[ "${{ steps.compare.outputs.update_needed }}" == "true" ]]; then
+            echo "✅ Ollama CPU image updated and pushed!"
+          else
+            echo "🚫 No changes detected, build skipped."
+          fi
