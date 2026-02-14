@@ -14,11 +14,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Restore digest cache
         id: restore
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: .ollama_digest
           key: ollama-digest
@@ -78,7 +78,7 @@ jobs:
 
       - name: Save digest cache
         if: steps.compare.outputs.update_needed == 'true'
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: .ollama_digest
           key: ollama-digest
