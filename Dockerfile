@@ -4,8 +4,8 @@ FROM cgr.dev/chainguard/wolfi-base
 RUN apk add --no-cache libstdc++
 
 COPY --from=ollama /usr/bin/ollama /usr/bin/ollama
-COPY --from=ollama /usr/lib/ollama/libggml-base* /usr/lib/ollama/
-COPY --from=ollama /usr/lib/ollama/libggml-cpu* /usr/lib/ollama/
+COPY --from=ollama /usr/lib/ollama/lib* /usr/lib/ollama/
+COPY --from=ollama /usr/lib/ollama/llama-* /usr/lib/ollama/
 COPY --from=ollama /usr/lib/ollama/llama-server /usr/lib/ollama/llama-server
 
 ENV OLLAMA_HOST=0.0.0.0
