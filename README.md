@@ -1,6 +1,6 @@
 # ollama cpu-only
 
-Lightweight CPU-only build, always tracking the latest [ollama](https://hub.docker.com/r/ollama/ollama) release
+Lightweight CPU-only (AVX2+) build, always tracking the latest [ollama](https://hub.docker.com/r/ollama/ollama) release
 
 ## Build
 
